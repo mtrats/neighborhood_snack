@@ -899,6 +899,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Body_010
       objectReference: {fileID: 0}
+    - target: {fileID: 146935546818660778, guid: 7f6862d8aee10a042821738d523fc6fa, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 667049195000124176, guid: 7f6862d8aee10a042821738d523fc6fa, type: 3}
       propertyPath: m_LocalPosition.x
       value: -17.29
@@ -10377,8 +10381,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 133.47186, y: 10.585363, z: 140.21799}
-  m_Center: {x: 1.77742, y: -0.35543633, z: 2.3440704}
+  m_Size: {x: 133.47186, y: 7.76, z: 140.21799}
+  m_Center: {x: 1.77742, y: -1.727, z: 2.3440704}
 --- !u!1 &6185189218710777913
 GameObject:
   m_ObjectHideFlags: 0
