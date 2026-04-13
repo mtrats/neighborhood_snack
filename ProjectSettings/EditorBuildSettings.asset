@@ -5,7 +5,7 @@ EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Scenes:
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Milana.unity
     guid: 04b5c239aab3f334aae84cf230018c00
   m_configObjects: {}
