@@ -7,83 +7,70 @@ public class TownspersonInteraction : NetworkBehaviour
 {
     [Header("References")]
     public VoiceRecorder voiceRecorder;
-    public GeminiService geminiService;
+    public SimpleGeminiMic geminiService;
     public TextMeshProUGUI dialogueText;
+    public TextMeshProUGUI trustScoreText; // optional, useful for debugging
     public Animator houseDoorAnimator;
 
-    // This boolean syncs across the network so only one person can talk
     [Networked] public NetworkBool IsMicBusy { get; set; }
-    
-    // This string syncs the AI's response so both players see the dialogue
     [Networked] public NetworkString<_128> CurrentDialogue { get; set; }
+    [Networked] public int TrustScore { get; set; }
 
     public override void Spawned()
     {
-        // Subscribe to the recorder's event
         if (voiceRecorder != null)
-        {
             voiceRecorder.OnRecordingComplete += HandleRecordingComplete;
-        }
     }
 
-    // Called by your UI Button
     public void OnClickRecord()
     {
-        // Only start if nobody else is talking
-        if (!IsMicBusy)
-        {
-            // Requesting authority to change the networked boolean
-            Object.RequestStateAuthority();
-            IsMicBusy = true;
-            
-            dialogueText.text = "Recording...";
-            voiceRecorder.StartRecording(5); // Record for 5 seconds
-        }
+        if (!HasInputAuthority || IsMicBusy) return;
+
+        Object.RequestStateAuthority();
+        IsMicBusy = true;
+        dialogueText.text = "Recording...";
+        voiceRecorder.StartRecording(5);
     }
 
     private async void HandleRecordingComplete(AudioClip clip)
     {
-        dialogueText.text = "Townsperson is thinking...";
+        if (!HasStateAuthority) return;
 
-        // Send to Gemini
-        string aiResult = await geminiService.ProcessVoiceToAI(clip);
+        CurrentDialogue = "Barnaby is thinking...";
 
-        // Update the networked string so both players see it
-        // We use an RPC or authority check to update networked data
-        if (Object.HasStateAuthority)
-        {
-            CurrentDialogue = aiResult;
-            
-            // Logic to unlock door based on AI response keywords
-            if (aiResult.ToLower().Contains("enter") || aiResult.ToLower().Contains("welcome"))
-            {
-                TriggerDoorOpen();
-            }
+        GeminiResponse result = await geminiService.ProcessVoiceToAI(clip, TrustScore);
 
-            // Release the mic lock
-            IsMicBusy = false;
-        }
+        // Update trust score, clamped so it can't go below 0
+        TrustScore = Mathf.Max(0, TrustScore + result.score);
+
+        CurrentDialogue = result.dialogue;
+
+        if (TrustScore >= SimpleGeminiMic.WinThreshold)
+            RPC_OpenDoor();
+
+        IsMicBusy = false;
     }
 
-    // This runs on every client when CurrentDialogue changes
     public override void Render()
     {
         dialogueText.text = CurrentDialogue.ToString();
+
+        if (trustScoreText != null)
+            trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
     }
 
-    private void TriggerDoorOpen()
+    [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
+    private void RPC_OpenDoor()
     {
         if (houseDoorAnimator != null)
-        {
             houseDoorAnimator.SetTrigger("Open");
-        }
+
+        dialogueText.text = "...Fine. Come in then. Wipe your boots.";
     }
 
     private void OnDestroy()
     {
         if (voiceRecorder != null)
-        {
             voiceRecorder.OnRecordingComplete -= HandleRecordingComplete;
-        }
     }
 }

@@ -1,145 +1,36 @@
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 using UnityEngine;
-using TMPro;
 using Google.GenAI;
 using Google.GenAI.Types;
 
-// Standard JSON utility for parsing
 [Serializable]
 public class GeminiResponse
 {
     public string dialogue;
-    public int score; // -1 for negative/rude, 0 for neutral, 1 for positive/kind
+    public int score;
 }
 
 public class SimpleGeminiMic : MonoBehaviour
 {
-    [Header("Settings")]
-    [SerializeField] private string apiKey = "AIzaSyCRam26QX4U8X4hBNf63N_GT0hRk0wJ3ts";
-    [SerializeField] private int recordingLength = 5;
-    
-    [Header("UI References")]
-    public TextMeshProUGUI statusText;
-
-    [Header("Game Logic")]
-    public int currentTrustScore = 0;
-    public Animator doorAnimator;
-
     private Client _client;
-    private string _micDevice;
-    private AudioClip _recordingClip;
-    private bool _isProcessing = false;
-
     private const string WorkingModel = "gemini-2.5-flash";
+
+    // Thresholds that define Barnaby's personality phases
+    private const int MidTrustThreshold = 3;
+    private const int TestPhaseThreshold = 6;
+    public const int WinThreshold = 9;
 
     void Awake()
     {
-        _client = new Client(apiKey: apiKey);
-
-        if (Microphone.devices.Length > 0)
-        {
-            _micDevice = Microphone.devices[0];
-            statusText.text = "Mic Ready. Click to Record.";
-        }
-        else
-        {
-            statusText.text = "No Microphone Found!";
-        }
+        _client = new Client(apiKey: LoadApiKey());
     }
 
-    public void ToggleRecording()
-    {
-        if (_isProcessing) return;
-
-        if (!Microphone.IsRecording(_micDevice))
-        {
-            StartRecording();
-        }
-        else
-        {
-            StopAndSend();
-        }
-    }
-
-    private void StartRecording()
-    {
-        _recordingClip = Microphone.Start(_micDevice, false, recordingLength, 16000);
-        statusText.text = "Recording... (Speak now)";
-        Invoke(nameof(StopAndSend), (float)recordingLength);
-    }
-
-    private async void StopAndSend()
-    {
-        if (!Microphone.IsRecording(_micDevice)) return;
-
-        CancelInvoke(nameof(StopAndSend));
-        Microphone.End(_micDevice);
-        
-        _isProcessing = true;
-        statusText.text = "Townsperson is listening...";
-
-        try
-        {
-            string rawJson = await SendToGemini(_recordingClip);
-            
-            // Parse the JSON result
-            GeminiResponse result = JsonUtility.FromJson<GeminiResponse>(rawJson);
-            
-            // Update UI with ONLY the dialogue
-            statusText.text = result.dialogue;
-
-            // Apply game logic based on the hidden score
-            HandleGameLogic(result.score);
-        }
-        catch (Exception e)
-        {
-            if (e.Message.Contains("429") || e.Message.Contains("quota"))
-                statusText.text = "API Busy. Wait 60s.";
-            else
-                statusText.text = "Error understanding audio.";
-            
-            Debug.LogError(e);
-        }
-        finally
-        {
-            _isProcessing = false;
-        }
-    }
-
-    private void HandleGameLogic(int score)
-    {
-        currentTrustScore += score;
-        Debug.Log($"Current Trust Score: {currentTrustScore}");
-
-        // If they are nice enough (Score reaches 2), open the door
-        if (currentTrustScore >= 2 && doorAnimator != null)
-        {
-            doorAnimator.SetTrigger("Open");
-            Debug.Log("The townsperson let you in!");
-        }
-    }
-
-    private async Task<string> SendToGemini(AudioClip clip)
+    public async Task<GeminiResponse> ProcessVoiceToAI(AudioClip clip, int currentTrustScore)
     {
         byte[] wavData = ConvertToWav(clip);
-
-        // Define the personality AND the output format.
-        string systemPrompt = @"You are a grumpy townsperson named Barnaby. 
-        Respond to the user's audio input. 
-        Determine if they are being KIND (1), NEUTRAL (0), or RUDE (-1).
-        
-        Return your response ONLY as a JSON object with these fields:
-        {
-            ""dialogue"": ""your grumpy response text here"",
-            ""score"": 1
-        }
-        
-        Examples:
-        Input: 'Hello sir, could I please come in?' -> Output: {""dialogue"": ""Fine, fine. Wipe your boots first."", ""score"": 1}
-        Input: 'Move out of the way old man!' -> Output: {""dialogue"": ""Watch your tone, brat! Get lost!"", ""score"": -1}";
+        string systemPrompt = BuildPrompt(currentTrustScore);
 
         var contents = new List<Content>
         {
@@ -149,7 +40,6 @@ public class SimpleGeminiMic : MonoBehaviour
                 Parts = new List<Part>
                 {
                     new Part { Text = systemPrompt },
-                    // FIXED: Passing raw byte array instead of Base64 string to resolve conversion error
                     new Part { InlineData = new Blob { MimeType = "audio/wav", Data = wavData } }
                 }
             }
@@ -163,10 +53,89 @@ public class SimpleGeminiMic : MonoBehaviour
 
         if (response?.Candidates != null && response.Candidates.Count > 0)
         {
-            return response.Candidates[0].Content.Parts[0].Text;
+            string rawJson = response.Candidates[0].Content.Parts[0].Text;
+            return JsonUtility.FromJson<GeminiResponse>(rawJson);
         }
 
-        return "{}";
+        return new GeminiResponse { dialogue = "...", score = 0 };
+    }
+
+    private string BuildPrompt(int trustScore)
+    {
+        string personalityBlock;
+
+        if (trustScore < MidTrustThreshold)
+        {
+            // Phase 1: Hostile. Short, dismissive, suspicious of strangers.
+            personalityBlock =
+                @"You are Barnaby, a deeply suspicious and grumpy old townsperson. 
+                A stranger is at your door at night. You do NOT trust them at all.
+                You are hostile and dismissive. You ask them what they want and why 
+                they should be trusted. Short, sharp responses. You are not warming up yet.
+                Rude or pushy behaviour makes you angrier. Polite behaviour makes you 
+                slightly less hostile but you are still very suspicious.";
+        }
+        else if (trustScore < TestPhaseThreshold)
+        {
+            // Phase 2: Softening. You're starting to consider it but won't show it easily.
+            personalityBlock =
+                @"You are Barnaby, a grumpy but slightly curious old townsperson.
+                The stranger at your door has been polite enough to get your attention,
+                though you'd never admit it. You are still guarded but you're starting 
+                to engage a little more. Ask them questions about themselves or why they 
+                need shelter. You're testing whether they're genuine. Rudeness now would 
+                really disappoint you and make you pull back. Kindness is slowly working.";
+        }
+        else
+        {
+            // Phase 3: Testing. You're almost convinced but you need one good reason.
+            personalityBlock =
+                @"You are Barnaby, a grumpy old townsperson who has been slowly worn down 
+                by this stranger's persistence and manners. You are very close to letting 
+                them in but you need to be sure. Give them one final test or question — 
+                something personal, something that proves they mean no harm. A genuinely 
+                kind or earnest answer should push you over the edge. A rude or dismissive 
+                answer would slam the door shut on all that progress. Make this feel like 
+                a real moment of decision.";
+        }
+
+        return $@"{personalityBlock}
+
+        The stranger is a vampire, though you don't know this yet. You just see someone 
+        who needs to be invited in.
+
+        Respond to the stranger's audio message. Score their approach:
+        KIND and genuine = 1, NEUTRAL or evasive = 0, RUDE or pushy = -1.
+
+        Scoring notes:
+        - Flattery without substance should only score 0, not 1.
+        - Repetitive polite phrases that feel hollow score 0 after the first time.
+        - A truly heartfelt or creative appeal scores 1.
+        - Aggression or impatience always scores -1 regardless of phase.
+
+        Return ONLY a JSON object:
+        {{
+            ""dialogue"": ""Barnaby's response here"",
+            ""score"": 0
+        }}";
+    }
+
+    private string LoadApiKey()
+    {
+        string envPath = System.IO.Path.Combine(Application.dataPath, "..", ".env");
+
+        if (!System.IO.File.Exists(envPath))
+            throw new Exception(".env file not found at: " + envPath);
+
+        foreach (var line in System.IO.File.ReadAllLines(envPath))
+        {
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+            var parts = line.Split('=', 2);
+            if (parts.Length == 2 && parts[0].Trim() == "GEMINI_API_KEY")
+                return parts[1].Trim();
+        }
+
+        throw new Exception("GEMINI_API_KEY not found in .env file");
     }
 
     private byte[] ConvertToWav(AudioClip clip)
@@ -174,9 +143,9 @@ public class SimpleGeminiMic : MonoBehaviour
         float[] samples = new float[clip.samples * clip.channels];
         clip.GetData(samples, 0);
 
-        using (var stream = new MemoryStream())
+        using (var stream = new System.IO.MemoryStream())
         {
-            using (var writer = new BinaryWriter(stream))
+            using (var writer = new System.IO.BinaryWriter(stream))
             {
                 writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
                 writer.Write(36 + samples.Length * 2);
@@ -193,9 +162,7 @@ public class SimpleGeminiMic : MonoBehaviour
                 writer.Write(samples.Length * 2);
 
                 foreach (var sample in samples)
-                {
                     writer.Write((short)(sample * short.MaxValue));
-                }
             }
             return stream.ToArray();
         }
