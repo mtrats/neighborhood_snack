@@ -1359,9 +1359,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 580227729}
-        m_TargetAssemblyTypeName: SimpleGeminiMic, Assembly-CSharp
-        m_MethodName: ToggleRecording
+      - m_Target: {fileID: 580227732}
+        m_TargetAssemblyTypeName: TownspersonInteraction, Assembly-CSharp
+        m_MethodName: OnClickRecord
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

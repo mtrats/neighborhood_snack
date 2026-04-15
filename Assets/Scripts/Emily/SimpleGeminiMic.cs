@@ -15,7 +15,7 @@ public class GeminiResponse
 public class SimpleGeminiMic : MonoBehaviour
 {
     private Client _client;
-    private const string WorkingModel = "gemini-2.5-flash";
+    private const string WorkingModel = "gemini-2.5-flash-lite";
 
     // Thresholds that define Barnaby's personality phases
     private const int MidTrustThreshold = 3;
