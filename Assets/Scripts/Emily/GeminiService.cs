@@ -14,8 +14,8 @@ public class GeminiService : MonoBehaviour
 
     void Awake()
     {
-        // Load .env file
-        // DotEnv.Load();
+        DotNetEnv.Env.Load();
+        DotNetEnv.Env.TraversePath().Load();
         
         // Load API key from environment variable
         apiKey = System.Environment.GetEnvironmentVariable("GEMINI_API_KEY");
