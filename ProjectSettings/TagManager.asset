@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 2
   tags:
   - Townsperson
+  - Spawner
   layers:
   - Default
   - TransparentFX
