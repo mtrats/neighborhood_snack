@@ -11,7 +11,9 @@ public class WhisperService : MonoBehaviour
 
     void Awake()
     {
-        _apiKey = LoadApiKey();
+        _apiKey = FindEnvValue("OPENAI_API_KEY");
+        if (_apiKey == null)
+            Debug.LogError("OPENAI_API_KEY not found in .env file");
     }
 
     public async Task<WhisperResult> Transcribe(AudioClip clip)
@@ -29,7 +31,6 @@ public class WhisperService : MonoBehaviour
 
             var operation = request.SendWebRequest();
 
-            // Await the web request without blocking the main thread
             while (!operation.isDone)
                 await Task.Yield();
 
@@ -68,33 +69,39 @@ public class WhisperService : MonoBehaviour
     {
         switch (responseCode)
         {
-            case 401:
-                return "Invalid OpenAI API key. Check your .env file.";
-            case 429:
-                return "Too many requests. Please wait a moment.";
-            case 413:
-                return "Recording was too large. Try a shorter recording.";
-            default:
-                return $"Transcription failed ({responseCode}). Please try again.";
+            case 401: return "Invalid OpenAI API key. Check your .env file.";
+            case 429: return "Too many requests. Please wait a moment.";
+            case 413: return "Recording was too large. Try a shorter recording.";
+            default:  return $"Transcription failed ({responseCode}). Please try again.";
         }
     }
 
-    private string LoadApiKey()
+    private string FindEnvValue(string keyName)
     {
-        string envPath = System.IO.Path.Combine(Application.dataPath, "..", ".env");
-
-        if (!System.IO.File.Exists(envPath))
-            throw new Exception(".env file not found at: " + envPath);
-
-        foreach (var line in System.IO.File.ReadAllLines(envPath))
+        string[] candidatePaths = new string[]
         {
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
-            var parts = line.Split('=', 2);
-            if (parts.Length == 2 && parts[0].Trim() == "OPENAI_API_KEY")
-                return parts[1].Trim();
+            System.IO.Path.Combine(Application.dataPath, "..", ".env"),
+            System.IO.Path.Combine(Application.persistentDataPath, ".env"),
+            System.IO.Path.Combine(Application.streamingAssetsPath, ".env"),
+        };
+
+        foreach (string path in candidatePaths)
+        {
+            string resolved = System.IO.Path.GetFullPath(path);
+            Debug.Log($"[WhisperService] Checking for .env at: {resolved}");
+
+            if (!System.IO.File.Exists(resolved)) continue;
+
+            foreach (var line in System.IO.File.ReadAllLines(resolved))
+            {
+                if (string.IsNullOrWhiteSpace(line) || line.StartsWith("#")) continue;
+                var parts = line.Split('=', 2);
+                if (parts.Length == 2 && parts[0].Trim() == keyName)
+                    return parts[1].Trim();
+            }
         }
 
-        throw new Exception("OPENAI_API_KEY not found in .env file");
+        return null;
     }
 
     private byte[] ConvertToWav(AudioClip clip)

@@ -15,7 +15,7 @@ public class TownspersonInteraction : NetworkBehaviour
     
 
     [Networked] public NetworkBool IsMicBusy { get; set; }
-    [Networked] public NetworkString<_128> CurrentDialogue { get; set; }
+    [Networked] public NetworkString<_512> CurrentDialogue { get; set; }
     [Networked] public int TrustScore { get; set; }
 
     public override void Spawned()
@@ -70,7 +70,22 @@ private readonly Dictionary<string, int> stageKeywords = new Dictionary<string, 
     { "help", 4 }
 };
 
+private int CheckKeywords(string transcript)
+{
+    string lower = transcript.ToLower();
+    int bonusScore = 0;
 
+    foreach (var keyword in stageKeywords)
+    {
+        if (lower.Contains(keyword.Key))
+        {
+            Debug.Log($"[Keywords] Matched keyword: '{keyword.Key}' (+{keyword.Value})");
+            bonusScore += keyword.Value;
+        }
+    }
+
+    return bonusScore;
+}
 
 private async void HandleRecordingComplete(AudioClip clip)
 {
@@ -90,16 +105,23 @@ private async void HandleRecordingComplete(AudioClip clip)
 
     CurrentDialogue = "Barnaby is thinking...";
 
-    // Step 2: Send transcript to AI
+    // Step 2: Check transcript for keywords
+    int keywordBonus = CheckKeywords(transcription.Transcript);
+
+    // Step 3: Send transcript to Gemini
     GeminiResponse result = await geminiService.ProcessVoiceToAI(
         transcription.Transcript,
         TrustScore
     );
 
-    TrustScore = Mathf.Max(0, TrustScore + result.score);
+    // Step 4: Apply both scores
+    int totalScore = result.score + keywordBonus;
+    Debug.Log($"[TrustScore] Gemini score: {result.score}, Keyword bonus: {keywordBonus}, Total: {totalScore}");
+
+    TrustScore = Mathf.Max(0, TrustScore + totalScore);
     CurrentDialogue = result.dialogue;
 
-    if (TrustScore >= GeminiService.WinThreshold)
+    if (TrustScore >= SimpleGeminiMic.WinThreshold)
         RPC_OpenDoor();
 
     IsMicBusy = false;
