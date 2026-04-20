@@ -8,9 +8,11 @@ public class TownspersonInteraction : NetworkBehaviour
     [Header("References")]
     public VoiceRecorder voiceRecorder;
     public SimpleGeminiMic geminiService;
+    public WhisperService whisperService;
     public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI trustScoreText; 
     public Animator houseDoorAnimator;
+    
 
     [Networked] public NetworkBool IsMicBusy { get; set; }
     [Networked] public NetworkString<_128> CurrentDialogue { get; set; }
@@ -68,53 +70,39 @@ private readonly Dictionary<string, int> stageKeywords = new Dictionary<string, 
     { "help", 4 }
 };
 
+
+
 private async void HandleRecordingComplete(AudioClip clip)
 {
     if (!HasStateAuthority) return;
 
+    CurrentDialogue = "Barnaby is listening...";
+
+    // Step 1: Transcribe
+    WhisperResult transcription = await whisperService.Transcribe(clip);
+
+    if (!transcription.Success)
+    {
+        CurrentDialogue = transcription.ErrorMessage;
+        IsMicBusy = false;
+        return;
+    }
+
     CurrentDialogue = "Barnaby is thinking...";
 
-    try 
-    {
-        // 1. Get the AI response
-        GeminiResponse result = await geminiService.ProcessVoiceToAI(clip, TrustScore);
-        
-        // 2. Calculate Keyword Bonus
-        int bonus = 0;
-        string lowerDialogue = result.dialogue.ToLower();
+    // Step 2: Send transcript to AI
+    GeminiResponse result = await geminiService.ProcessVoiceToAI(
+        transcription.Transcript,
+        TrustScore
+    );
 
-        foreach (var entry in stageKeywords)
-        {
-            if (lowerDialogue.Contains(entry.Key))
-            {
-                Debug.Log($"<color=green>Keyword Bonus Triggered: {entry.Key} (+{entry.Value})</color>");
-                bonus += entry.Value;
-                // We break after one match per turn to prevent score exploitation
-                break; 
-            }
-        }
+    TrustScore = Mathf.Max(0, TrustScore + result.score);
+    CurrentDialogue = result.dialogue;
 
-        // 3. Apply the combined score (AI Sentiment + Manual Bonus)
-        // This ensures even a '0' from Gemini can progress if keywords are used
-        TrustScore = Mathf.Max(0, TrustScore + result.score + bonus);
-        CurrentDialogue = result.dialogue;
+    if (TrustScore >= GeminiService.WinThreshold)
+        RPC_OpenDoor();
 
-        // 4. Check for Win State (WinThreshold is 9 per your script)
-        if (TrustScore >= SimpleGeminiMic.WinThreshold)
-        {
-            Debug.Log("Barnaby is convinced! Opening door.");
-            RPC_OpenDoor();
-        }
-    }
-    catch (System.Exception e)
-    {
-        Debug.LogError($"Gemini API Error: {e.Message}");
-        CurrentDialogue = "I'm a bit busy right now, partner. Try again in a minute.";
-    }
-    finally 
-    {
-        IsMicBusy = false;
-    }
+    IsMicBusy = false;
 }
     public override void Render()
     {

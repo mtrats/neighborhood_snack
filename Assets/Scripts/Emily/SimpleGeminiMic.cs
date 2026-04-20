@@ -15,7 +15,7 @@ public class GeminiResponse
 public class SimpleGeminiMic : MonoBehaviour
 {
     private Client _client;
-    private const string WorkingModel = "gemini-2.5-flash-lite";
+    private const string WorkingModel = "gemini-2.5-flash";
 
     // Thresholds that define Barnaby's personality phases
     private const int MidTrustThreshold = 3;
@@ -27,9 +27,8 @@ public class SimpleGeminiMic : MonoBehaviour
         _client = new Client(apiKey: LoadApiKey());
     }
 
-    public async Task<GeminiResponse> ProcessVoiceToAI(AudioClip clip, int currentTrustScore)
+    public async Task<GeminiResponse> ProcessVoiceToAI(string transcript, int currentTrustScore)
     {
-        byte[] wavData = ConvertToWav(clip);
         string systemPrompt = BuildPrompt(currentTrustScore);
 
         var contents = new List<Content>
@@ -40,7 +39,7 @@ public class SimpleGeminiMic : MonoBehaviour
                 Parts = new List<Part>
                 {
                     new Part { Text = systemPrompt },
-                    new Part { InlineData = new Blob { MimeType = "audio/wav", Data = wavData } }
+                    new Part { Text = $"The player said: {transcript}" } // replaces InlineData
                 }
             }
         };
