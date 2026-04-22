@@ -15,7 +15,7 @@ public class GeminiResponse
 public class SimpleGeminiMic : MonoBehaviour
 {
     private Client _client;
-    private const string WorkingModel = "gemini-2.5-flash-lite";
+    private const string WorkingModel = "gemini-2.5-flash";
 
     // Thresholds that define Barnaby's personality phases
     private const int MidTrustThreshold = 3;
@@ -27,9 +27,8 @@ public class SimpleGeminiMic : MonoBehaviour
         _client = new Client(apiKey: LoadApiKey());
     }
 
-    public async Task<GeminiResponse> ProcessVoiceToAI(AudioClip clip, int currentTrustScore)
+    public async Task<GeminiResponse> ProcessVoiceToAI(string transcript, int currentTrustScore)
     {
-        byte[] wavData = ConvertToWav(clip);
         string systemPrompt = BuildPrompt(currentTrustScore);
 
         var contents = new List<Content>
@@ -40,7 +39,7 @@ public class SimpleGeminiMic : MonoBehaviour
                 Parts = new List<Part>
                 {
                     new Part { Text = systemPrompt },
-                    new Part { InlineData = new Blob { MimeType = "audio/wav", Data = wavData } }
+                    new Part { Text = $"The player said: {transcript}" } // replaces InlineData
                 }
             }
         };
@@ -136,35 +135,5 @@ public class SimpleGeminiMic : MonoBehaviour
         }
 
         throw new Exception("GEMINI_API_KEY not found in .env file");
-    }
-
-    private byte[] ConvertToWav(AudioClip clip)
-    {
-        float[] samples = new float[clip.samples * clip.channels];
-        clip.GetData(samples, 0);
-
-        using (var stream = new System.IO.MemoryStream())
-        {
-            using (var writer = new System.IO.BinaryWriter(stream))
-            {
-                writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF"));
-                writer.Write(36 + samples.Length * 2);
-                writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVE"));
-                writer.Write(System.Text.Encoding.ASCII.GetBytes("fmt "));
-                writer.Write(16);
-                writer.Write((ushort)1);
-                writer.Write((ushort)clip.channels);
-                writer.Write(clip.frequency);
-                writer.Write(clip.frequency * clip.channels * 2);
-                writer.Write((ushort)(clip.channels * 2));
-                writer.Write((ushort)16);
-                writer.Write(System.Text.Encoding.ASCII.GetBytes("data"));
-                writer.Write(samples.Length * 2);
-
-                foreach (var sample in samples)
-                    writer.Write((short)(sample * short.MaxValue));
-            }
-            return stream.ToArray();
-        }
     }
 }
