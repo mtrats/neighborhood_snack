@@ -6,12 +6,13 @@ using Fusion;
 public class PlayerSpawner : SimulationBehaviour, IPlayerJoined
 {
     public GameObject PlayerPrefab;
+    public GameObject spawner;
 
     void IPlayerJoined.PlayerJoined(PlayerRef player)
     {
         if (player == Runner.LocalPlayer)
         {
-            Runner.Spawn(PlayerPrefab, new Vector3(-17.29f, 8.6f, 10f), Quaternion.identity, player);
+            Runner.Spawn(PlayerPrefab, spawner.transform.position, spawner.transform.rotation, player);
         }
     }
 }

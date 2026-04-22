@@ -41,6 +41,16 @@ public class PlayerMovementAnimated : NetworkBehaviour
         }
     }
 
+    public override void Spawned()
+    {
+        if (Object.HasStateAuthority)
+        {
+            if (_controller != null) _controller.enabled = false;
+            transform.position = transform.position;
+            if (_controller != null) _controller.enabled = true;
+        }
+    }
+
     public override void FixedUpdateNetwork()
     {
         // FixedUpdateNetwork is only executed on the StateAuthority
@@ -53,21 +63,12 @@ public class PlayerMovementAnimated : NetworkBehaviour
             currentVelocity.y = -2f;
         }
 
-        // --- CAMERA RELATIVE MOVEMENT ---
-        // 1. Get Input
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
-
-        // 2. Get Camera Directions
         Vector3 camForward = Camera.main.transform.forward;
         Vector3 camRight = Camera.main.transform.right;
-
-        // 3. Flatten them so jumping/movement isn't tilted
         camForward.y = 0;
         camRight.y = 0;
-        //camForward.Normalize();
-        //camRight.Normalize();
-
         Vector3 move = (camForward * v + camRight * h).normalized * PlayerSpeed;
         Vector3 moveDirection = (camForward.normalized * v + camRight.normalized * h).normalized;
         Vector3 moveStep = moveDirection * PlayerSpeed;
@@ -85,24 +86,16 @@ public class PlayerMovementAnimated : NetworkBehaviour
         if (moveDirection.sqrMagnitude > 0.01f)
         {
             gameObject.transform.forward = moveDirection;
-            //_animator.SetFloat(m_SpeedAnimatorHash, 1);
-            //_isMoving = true;
             IsMoving = true;
         }
         else
         {
-            //_animator.SetFloat(m_SpeedAnimatorHash, 0);
-            //_isMoving = false;
             IsMoving = false;
         }
         _jumpPressed = false;
 
-        // _isGrounded = _controller.isGrounded;
         IsGrounded = _controller.isGrounded;  
         NetworkedVelocity = currentVelocity;
-
-        //_animator.SetFloat(m_VerticalSpeedHash, _velocity.y);
-        
     }
 
     public override void Render()
