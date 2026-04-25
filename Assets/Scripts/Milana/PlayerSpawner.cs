@@ -23,6 +23,7 @@ public class PlayerSpawner : SimulationBehaviour, IPlayerJoined
         Vector3 spawnPos = spawner != null ? spawner.transform.position : Vector3.zero;
         Quaternion spawnRot = spawner != null ? spawner.transform.rotation : Quaternion.identity;
 
-        Runner.Spawn(PlayerPrefab, spawnPos, spawnRot, Runner.LocalPlayer);
+        NetworkObject spawnedPlayer = Runner.Spawn(PlayerPrefab, spawnPos, spawnRot, Runner.LocalPlayer);
+        PlayerCamera.AssignToPlayer(spawnedPlayer.transform);
     }
 }
