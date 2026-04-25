@@ -22,12 +22,13 @@ public class PlayerSpawner2 : MonoBehaviour
 
         if (!runner.TryGetPlayerObject(runner.LocalPlayer, out _))
         {
-            runner.Spawn(
+            NetworkObject spawnedPlayer = runner.Spawn(
                 PlayerPrefab,
                 transform.position,
                 transform.rotation,
                 runner.LocalPlayer
             );
+            PlayerCamera.AssignToPlayer(spawnedPlayer.transform);
         }
     }
 }
