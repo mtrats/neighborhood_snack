@@ -26,7 +26,7 @@ public class BarnabyPersonality : MonoBehaviour, INPCPersonality
 
     public Dictionary<string, int> GetKeywords() => new Dictionary<string, int>
     {
-        { "pineapple", 7 },
+        { "pineapple", 8 },
         { "hi", 1 }, { "hello", 1 }, { "how are you", 1 }, { "please", 1 },
         { "tired", 2 }, { "travelling", 2 }, { "room", 2 }, { "lost", 2 },
         { "can i", 1 }, { "may i", 1 }, { "thank you", 2 },
