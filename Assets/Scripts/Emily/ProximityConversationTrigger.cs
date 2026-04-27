@@ -49,8 +49,6 @@ public class ProximityConversationTrigger : MonoBehaviour
 
         float distance = Vector3.Distance(player.position, transform.position);
 
-        Debug.Log($"[Proximity] Distance to player: {distance}");
-
         if (distance <= triggerDistance)
         {
             Debug.Log("[Proximity] Within trigger distance!");
