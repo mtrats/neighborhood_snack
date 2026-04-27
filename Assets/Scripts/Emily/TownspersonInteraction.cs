@@ -12,40 +12,73 @@ public class TownspersonInteraction : NetworkBehaviour
     public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI trustScoreText; 
     public Animator houseDoorAnimator;
+    public Canvas dialogueCanvas; 
     
 
     [Networked] public NetworkBool IsMicBusy { get; set; }
-    [Networked] public NetworkString<_512> CurrentDialogue { get; set; }
-    [Networked] public int TrustScore { get; set; }
+    [Networked] public NetworkString<_64> LastSpeakerName { get; set; }
 
+    [Networked, OnChangedRender(nameof(OnDialogueChanged))]
+    public NetworkString<_512> CurrentDialogue { get; set; }
+
+    [Networked, OnChangedRender(nameof(OnDialogueOpenChanged))]
+    public NetworkBool IsDialogueOpen { get; set; }
+
+    [Networked, OnChangedRender(nameof(OnTrustScoreChanged))]
+public int TrustScore { get; set; }
     public override void Spawned()
     {
         if (voiceRecorder != null)
             voiceRecorder.OnRecordingComplete += HandleRecordingComplete;
+
+        if (dialogueCanvas != null)
+            dialogueCanvas.gameObject.SetActive(IsDialogueOpen);
+
+        if (dialogueText != null)
+            dialogueText.text = CurrentDialogue.ToString();
+
+        if (trustScoreText != null)
+            trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
+
+        OnDialogueOpenChanged();
+        OnDialogueChanged();
+        OnTrustScoreChanged();
     }
 
+// Replace OnClickRecord with this:
 public void OnClickRecord()
 {
     Debug.Log("Button Clicked!");
 
-    // 1. Check if mic is already in use
-    if (IsMicBusy) 
+    if (IsMicBusy) return;
+
+    // Store who is speaking before requesting authority
+    string localPlayerName = Runner.LocalPlayer.ToString(); 
+
+    Object.RequestStateAuthority();
+    StartCoroutine(WaitForAuthorityThenRecord(localPlayerName));
+}
+
+private System.Collections.IEnumerator WaitForAuthorityThenRecord(string speakerName)
+{
+    // Wait until authority is confirmed
+    float timeout = 2f;
+    while (!HasStateAuthority && timeout > 0f)
     {
-        Debug.LogWarning("Click Failed: Mic is already busy.");
-        return;
+        timeout -= Time.deltaTime;
+        yield return null;
     }
 
-    // 2. Request State Authority so we can change 'CurrentDialogue' and 'IsMicBusy'
-    // This allows the client to "take control" of the NPC long enough to talk to it.
-    Object.RequestStateAuthority();
-    
-    // 3. Set the Networked properties
-    // Note: These might take a tiny fraction of a second to sync
+    if (!HasStateAuthority)
+    {
+        Debug.LogWarning("Could not get State Authority in time.");
+        yield break;
+    }
+
     IsMicBusy = true;
-    CurrentDialogue = "Recording..."; 
-    
-    // 4. Start the local recording logic
-    Debug.Log("Starting voice recorder...");
+    IsDialogueOpen = true;
+    LastSpeakerName = speakerName;
+    CurrentDialogue = "Recording...";
     voiceRecorder.StartRecording(5);
 }
 
@@ -55,6 +88,7 @@ private readonly Dictionary<string, int> stageKeywords = new Dictionary<string, 
     // Phase 1 -> 2 Keywords (Breaking the ice)
     { "friend", 2 },
     { "trade", 2 },
+    { "buy", 2 },
     { "peace", 2 },
     { "lost", 2 },
     { "doctor", 2 },
@@ -93,7 +127,6 @@ private async void HandleRecordingComplete(AudioClip clip)
 
     CurrentDialogue = "Barnaby is listening...";
 
-    // Step 1: Transcribe
     WhisperResult transcription = await whisperService.Transcribe(clip);
 
     if (!transcription.Success)
@@ -105,20 +138,17 @@ private async void HandleRecordingComplete(AudioClip clip)
 
     CurrentDialogue = "Barnaby is thinking...";
 
-    // Step 2: Check transcript for keywords
     int keywordBonus = CheckKeywords(transcription.Transcript);
+    TrustScore = Mathf.Max(0, TrustScore + keywordBonus);
 
-    // Step 3: Send transcript to Gemini
+    // Pass speaker name to Gemini
     GeminiResponse result = await geminiService.ProcessVoiceToAI(
         transcription.Transcript,
-        TrustScore
+        TrustScore,
+        LastSpeakerName.ToString()  // ← new parameter
     );
 
-    // Step 4: Apply both scores
-    int totalScore = result.score + keywordBonus;
-    Debug.Log($"[TrustScore] Gemini score: {result.score}, Keyword bonus: {keywordBonus}, Total: {totalScore}");
-
-    TrustScore = Mathf.Max(0, TrustScore + totalScore);
+    TrustScore = Mathf.Max(0, TrustScore + result.score);
     CurrentDialogue = result.dialogue;
 
     if (TrustScore >= SimpleGeminiMic.WinThreshold)
@@ -126,18 +156,25 @@ private async void HandleRecordingComplete(AudioClip clip)
 
     IsMicBusy = false;
 }
-    public override void Render()
-    {
-        // Only update UI if the string has actually changed to save performance
-        string currentText = CurrentDialogue.ToString();
-        if (dialogueText != null && dialogueText.text != currentText)
-        {
-            dialogueText.text = currentText;
-        }
+    private void OnDialogueChanged()
+{
+    if (dialogueText != null)
+        dialogueText.text = CurrentDialogue.ToString();
+}
 
-        if (trustScoreText != null)
-            trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
-    }
+private void OnDialogueOpenChanged()
+{
+    if (dialogueCanvas != null)
+        dialogueCanvas.gameObject.SetActive(IsDialogueOpen);
+}
+
+private void OnTrustScoreChanged()
+{
+    if (trustScoreText != null)
+        trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
+}
+
+// You can now delete the Render() override entirely
 
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
     private void RPC_OpenDoor()
