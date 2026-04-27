@@ -2284,7 +2284,6 @@ MonoBehaviour:
   whisperService: {fileID: 458486296}
   dialogueText: {fileID: 894314394}
   trustScoreText: {fileID: 127375905}
-  houseDoorAnimator: {fileID: 0}
   dialogueCanvas: {fileID: 1268727456}
   _IsMicBusy:
     _value: 0
@@ -4458,6 +4457,71 @@ Light:
   m_UseViewFrustumForShadowCasterCull: 1
   m_ShadowRadius: 0
   m_ShadowAngle: 0
+--- !u!1001 &1056121118
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 167.43022
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.00020217896
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -284.91977
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.048582267
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.99881923
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -185.569
+      objectReference: {fileID: 0}
+    - target: {fileID: 3691189340030141592, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: interaction
+      value: 
+      objectReference: {fileID: 458486291}
+    - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: dialogueCanvas
+      value: 
+      objectReference: {fileID: 1268727456}
+    - target: {fileID: 7223228121952107900, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: m_Name
+      value: Marco
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
 --- !u!1 &1061345507
 GameObject:
   m_ObjectHideFlags: 0
@@ -21123,3 +21187,4 @@ SceneRoots:
   - {fileID: 1926920867}
   - {fileID: 1343550846}
   - {fileID: 333894424}
+  - {fileID: 1056121118}
