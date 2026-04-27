@@ -7,19 +7,37 @@ public class LevelWin : MonoBehaviour
 {
     public GameObject winText;
     public GameObject winButton;
-    public TownspersonInteraction interaction;
-    
+    private bool hasShown = false;
+
     // Update is called once per frame
     void Update()
     {
-        if (interaction == null)
-            return;
-        if (interaction.Object == null || !interaction.Object.IsValid)
-            return;
-        if (interaction.TrustScore >= SimpleGeminiMic.WinThreshold)
+        if (hasShown) return;
+
+        if (AllNPCsWon())
         {
-            winText.SetActive(true);
-            winButton.SetActive(true);
+            if (winText != null)
+                winText.SetActive(true);
+
+            if (winButton != null)
+                winButton.SetActive(true);
+
+            hasShown = true;
         }
+    }
+
+    private bool AllNPCsWon()
+    {
+        var triggers = FindObjectsOfType<ProximityConversationTrigger>();
+
+        // Need at least one NPC in the scene
+        if (triggers.Length == 0) return false;
+
+        foreach (var trigger in triggers)
+        {
+            if (!trigger.HasWon) return false;
+        }
+
+        return true;
     }
 }

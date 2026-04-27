@@ -8747,8 +8747,9 @@ GameObject:
   - component: {fileID: 7231262945954349825}
   - component: {fileID: 5703210630320804504}
   - component: {fileID: 4877512286340165929}
+  - component: {fileID: -7377446999500237316}
   m_Layer: 0
-  m_Name: NPC
+  m_Name: Lyra
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8816,8 +8817,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.4925871, y: 1.6460915, z: 0.55040646}
-  m_Center: {x: -0.009367466, y: 0.9726896, z: 0.044365406}
+  m_Size: {x: 0.4925871, y: 1.7973204, z: 0.55040646}
+  m_Center: {x: -0.009367466, y: 0.8970752, z: 0.044365406}
 --- !u!54 &5703210630320804504
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -8843,7 +8844,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 0
+  m_Constraints: 32
   m_CollisionDetection: 0
 --- !u!114 &4877512286340165929
 MonoBehaviour:
@@ -8860,6 +8861,18 @@ MonoBehaviour:
   dialogueCanvas: {fileID: 0}
   interaction: {fileID: 0}
   triggerDistance: 1
+--- !u!114 &-7377446999500237316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7223228121952107900}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f24395e901a2a0b409c73160f514b699, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &7230214244940115428
 GameObject:
   m_ObjectHideFlags: 0
