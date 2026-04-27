@@ -27,9 +27,9 @@ public class SimpleGeminiMic : MonoBehaviour
         _client = new Client(apiKey: LoadApiKey());
     }
 
-    public async Task<GeminiResponse> ProcessVoiceToAI(string transcript, int currentTrustScore)
+    public async Task<GeminiResponse> ProcessVoiceToAI(string transcript, int currentTrustScore, string speakerName)
     {
-        string systemPrompt = BuildPrompt(currentTrustScore);
+        string systemPrompt = BuildPrompt(currentTrustScore, speakerName);
 
         var contents = new List<Content>
         {
@@ -59,64 +59,57 @@ public class SimpleGeminiMic : MonoBehaviour
         return new GeminiResponse { dialogue = "...", score = 0 };
     }
 
-    private string BuildPrompt(int trustScore)
+    private string BuildPrompt(int trustScore, string speakerName)
     {
         string personalityBlock;
 
         if (trustScore < MidTrustThreshold)
         {
-            // Phase 1: Hostile. Short, dismissive, suspicious of strangers.
             personalityBlock =
                 @"You are Barnaby, a deeply suspicious and grumpy old townsperson. 
                 A stranger is at your door at night. You do NOT trust them at all.
-                You are hostile and dismissive. You ask them what they want and why 
-                they should be trusted. Short, sharp responses. You are not warming up yet.
-                Rude or pushy behaviour makes you angrier. Polite behaviour makes you 
-                slightly less hostile but you are still very suspicious.";
+                You are hostile and dismissive. Short, sharp responses.";
         }
         else if (trustScore < TestPhaseThreshold)
         {
-            // Phase 2: Softening. You're starting to consider it but won't show it easily.
             personalityBlock =
                 @"You are Barnaby, a grumpy but slightly curious old townsperson.
-                The stranger at your door has been polite enough to get your attention,
-                though you'd never admit it. You are still guarded but you're starting 
-                to engage a little more. Ask them questions about themselves or why they 
-                need shelter. You're testing whether they're genuine. Rudeness now would 
-                really disappoint you and make you pull back. Kindness is slowly working.";
+                The stranger has been polite enough to earn a little of your attention —
+                you'd never admit it, but something about them is getting through.
+                Your tone should feel NOTICEABLY warmer than before. You are still 
+                guarded but you are engaging more. Ask them real questions.";
         }
         else
         {
-            // Phase 3: Testing. You're almost convinced but you need one good reason.
             personalityBlock =
-                @"You are Barnaby, a grumpy old townsperson who has been slowly worn down 
-                by this stranger's persistence and manners. You are very close to letting 
-                them in but you need to be sure. Give them one final test or question — 
-                something personal, something that proves they mean no harm. A genuinely 
-                kind or earnest answer should push you over the edge. A rude or dismissive 
-                answer would slam the door shut on all that progress. Make this feel like 
-                a real moment of decision.";
+                @"You are Barnaby, a grumpy old townsperson who has been genuinely 
+                worn down by this stranger. You are almost ready to let them in.
+                Your tone should feel CLEARLY different from when you started — 
+                tired, almost reluctant kindness. Give them one final question 
+                or test before you make your decision.";
         }
+        
+        string phaseLabel = trustScore < MidTrustThreshold ? "PHASE 1 (hostile)" :
+                        trustScore < TestPhaseThreshold ? "PHASE 2 (softening)" :
+                        "PHASE 3 (almost convinced)";
 
-        return $@"{personalityBlock}
+    return $@"{personalityBlock}
 
-        The stranger is a vampire, though you don't know this yet. You just see someone 
-        who needs to be invited in.
+    CURRENT PHASE: {phaseLabel} — your dialogue MUST reflect this phase clearly.
+    Trust so far: {trustScore}/{WinThreshold}.
+    The stranger's name is: {speakerName}. Address them by name occasionally.
+    There may be multiple strangers taking turns speaking to you.
+    The stranger is a vampire, though you don't know this yet.
 
-        Respond to the stranger's audio message. Score their approach:
-        KIND and genuine = 1, NEUTRAL or evasive = 0, RUDE or pushy = -1.
+    IMPORTANT: Keep your dialogue under 70 words. Be concise.
 
-        Scoring notes:
-        - Flattery without substance should only score 0, not 1.
-        - Repetitive polite phrases that feel hollow score 0 after the first time.
-        - A truly heartfelt or creative appeal scores 1.
-        - Aggression or impatience always scores -1 regardless of phase.
+    Score their approach: KIND and genuine = 1, NEUTRAL or evasive = 0, RUDE or pushy = -1.
 
-        Return ONLY a JSON object:
-        {{
-            ""dialogue"": ""Barnaby's response here"",
-            ""score"": 0
-        }}";
+    Return ONLY a JSON object:
+    {{
+        ""dialogue"": ""Barnaby's response here"",
+        ""score"": 0
+    }}";
     }
 
     private string LoadApiKey()
