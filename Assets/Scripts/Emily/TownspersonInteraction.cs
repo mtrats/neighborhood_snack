@@ -30,6 +30,19 @@ public int TrustScore { get; set; }
     {
         if (voiceRecorder != null)
             voiceRecorder.OnRecordingComplete += HandleRecordingComplete;
+
+        if (dialogueCanvas != null)
+            dialogueCanvas.gameObject.SetActive(IsDialogueOpen);
+
+        if (dialogueText != null)
+            dialogueText.text = CurrentDialogue.ToString();
+
+        if (trustScoreText != null)
+            trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
+
+        OnDialogueOpenChanged();
+        OnDialogueChanged();
+        OnTrustScoreChanged();
     }
 
 // Replace OnClickRecord with this:
