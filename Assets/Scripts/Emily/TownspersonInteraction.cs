@@ -11,9 +11,12 @@ public class TownspersonInteraction : NetworkBehaviour
     public WhisperService whisperService;
     public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI trustScoreText; 
-    public Animator houseDoorAnimator;
     public Canvas dialogueCanvas; 
-    
+
+    private INPCPersonality _personality;
+    private string _activePersonalityName;
+    private List<(string player, string npc)> _conversationHistory = new List<(string player, string npc)>();
+
 
     [Networked] public NetworkBool IsMicBusy { get; set; }
     [Networked] public NetworkString<_64> LastSpeakerName { get; set; }
@@ -28,6 +31,8 @@ public class TownspersonInteraction : NetworkBehaviour
 public int TrustScore { get; set; }
     public override void Spawned()
     {
+        _conversationHistory.Clear();
+
         if (voiceRecorder != null)
             voiceRecorder.OnRecordingComplete += HandleRecordingComplete;
 
@@ -82,34 +87,16 @@ private System.Collections.IEnumerator WaitForAuthorityThenRecord(string speaker
     voiceRecorder.StartRecording(5);
 }
 
-// Add this near your other variables at the top of the class
-private readonly Dictionary<string, int> stageKeywords = new Dictionary<string, int>
-{
-    // Phase 1 -> 2 Keywords (Breaking the ice)
-    { "friend", 2 },
-    { "trade", 2 },
-    { "buy", 2 },
-    { "peace", 2 },
-    { "lost", 2 },
-    { "doctor", 2 },
-
-    // Phase 2 -> 3 Keywords (Building a connection)
-    { "family", 3 },
-    { "danger", 3 },
-    { "news", 3 },
-
-    // Phase 3 -> Win Keywords (The final push)
-    { "honest", 4 },
-    { "promise", 4 },
-    { "help", 4 }
-};
-
 private int CheckKeywords(string transcript)
 {
     string lower = transcript.ToLower();
     int bonusScore = 0;
 
-    foreach (var keyword in stageKeywords)
+    Dictionary<string, int> keywords = _personality != null
+        ? _personality.GetKeywords()
+        : new Dictionary<string, int>();
+
+    foreach (var keyword in keywords)
     {
         if (lower.Contains(keyword.Key))
         {
@@ -121,11 +108,53 @@ private int CheckKeywords(string transcript)
     return bonusScore;
 }
 
+public void SetPersonality(INPCPersonality personality)
+{
+    string nextPersonalityName = personality?.NPCName;
+
+    if (HasStateAuthority && !string.IsNullOrEmpty(_activePersonalityName) && _activePersonalityName != nextPersonalityName)
+        ResetConversation();
+
+    _personality = personality;
+    _activePersonalityName = nextPersonalityName;
+    Debug.Log($"[TownspersonInteraction] Personality set to: {_personality?.NPCName ?? "null"}");
+}
+
+    public string FormatDialogue(string dialogue)
+    {
+        if (string.IsNullOrWhiteSpace(dialogue))
+            return dialogue;
+
+        string npcName = _personality != null ? _personality.NPCName : "NPC";
+        return $"{npcName}: {dialogue}";
+    }
+
+public void ResetConversation()
+{
+    if (!HasStateAuthority) return;
+
+    TrustScore = 0;
+    _conversationHistory.Clear();
+    CurrentDialogue = string.Empty;
+    IsDialogueOpen = false;
+    IsMicBusy = false;
+    _activePersonalityName = null;
+    Debug.Log("[TownspersonInteraction] Conversation reset.");
+}
+
 private async void HandleRecordingComplete(AudioClip clip)
 {
     if (!HasStateAuthority) return;
 
-    CurrentDialogue = "Barnaby is listening...";
+    if (_personality == null)
+    {
+        Debug.LogError("[TownspersonInteraction] No INPCPersonality found on " + gameObject.name);
+        IsMicBusy = false;
+        return;
+    }
+
+    string listeningNpcName = _personality.NPCName;
+    CurrentDialogue = $"{listeningNpcName} is listening...";
 
     WhisperResult transcription = await whisperService.Transcribe(clip);
 
@@ -136,23 +165,25 @@ private async void HandleRecordingComplete(AudioClip clip)
         return;
     }
 
-    CurrentDialogue = "Barnaby is thinking...";
+    string npcName = _personality.NPCName;
+    CurrentDialogue = $"{npcName} is thinking...";
 
-    int keywordBonus = CheckKeywords(transcription.Transcript);
-    TrustScore = Mathf.Max(0, TrustScore + keywordBonus);
+    string fullPrompt = _personality.BuildPrompt(TrustScore, LastSpeakerName.ToString());
 
-    // Pass speaker name to Gemini
     GeminiResponse result = await geminiService.ProcessVoiceToAI(
         transcription.Transcript,
-        TrustScore,
-        LastSpeakerName.ToString()  // ← new parameter
+        fullPrompt,
+        _conversationHistory
     );
 
-    TrustScore = Mathf.Max(0, TrustScore + result.score);
-    CurrentDialogue = result.dialogue;
+    _conversationHistory.Add((transcription.Transcript, result.dialogue));
+
+    int keywordBonus = CheckKeywords(transcription.Transcript);
+    TrustScore = Mathf.Max(0, TrustScore + result.score + keywordBonus);
+    CurrentDialogue = FormatDialogue(result.dialogue);
 
     if (TrustScore >= SimpleGeminiMic.WinThreshold)
-        RPC_OpenDoor();
+        RPC_ShowWinResponse(GetWinLine());
 
     IsMicBusy = false;
 }
@@ -174,15 +205,46 @@ private void OnTrustScoreChanged()
         trustScoreText.text = $"Trust: {TrustScore} / {SimpleGeminiMic.WinThreshold}";
 }
 
-// You can now delete the Render() override entirely
-
     [Rpc(RpcSources.StateAuthority, RpcTargets.All)]
-    private void RPC_OpenDoor()
+    private void RPC_ShowWinResponse(string winLine)
     {
-        if (houseDoorAnimator != null)
-            houseDoorAnimator.SetTrigger("Open");
+        CurrentDialogue = FormatDialogue(winLine);
+        IsDialogueOpen = true;
+        IsMicBusy = false;
+        StartCoroutine(HideDialogueAfterWin());
+    }
 
-        dialogueText.text = "...Fine. Come in then. Wipe your boots.";
+    private string GetWinLine()
+    {
+        return _personality != null
+            ? _personality.GetWinLine()
+            : "All right. Come in.";
+    }
+
+    private System.Collections.IEnumerator HideDialogueAfterWin()
+    {
+        yield return new WaitForSeconds(1.5f);
+
+        if (!HasStateAuthority)
+            yield break;
+
+        if (HasUnwonNPCs())
+        {
+            IsDialogueOpen = false;
+        }
+    }
+
+    private bool HasUnwonNPCs()
+    {
+        var triggers = FindObjectsOfType<ProximityConversationTrigger>();
+
+        foreach (var trigger in triggers)
+        {
+            if (!trigger.HasWon)
+                return true;
+        }
+
+        return false;
     }
 
     private void OnDestroy()
