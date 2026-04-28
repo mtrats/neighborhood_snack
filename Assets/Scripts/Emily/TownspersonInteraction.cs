@@ -11,12 +11,15 @@ public class TownspersonInteraction : NetworkBehaviour
     public WhisperService whisperService;
     public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI trustScoreText; 
-    public Canvas dialogueCanvas; 
+    public Canvas dialogueCanvas;
+    public AudioClip talkClip;
+    //public AudioClip winClip;
+    public AudioSource speaker;
 
     private INPCPersonality _personality;
     private string _activePersonalityName;
     private List<(string player, string npc)> _conversationHistory = new List<(string player, string npc)>();
-
+    private bool IsTalking;
 
     [Networked] public NetworkBool IsMicBusy { get; set; }
     [Networked] public NetworkString<_64> LastSpeakerName { get; set; }
@@ -28,6 +31,8 @@ public class TownspersonInteraction : NetworkBehaviour
     public NetworkBool IsDialogueOpen { get; set; }
 
     [Networked, OnChangedRender(nameof(OnTrustScoreChanged))]
+
+    
 public int TrustScore { get; set; }
     public override void Spawned()
     {
@@ -180,7 +185,9 @@ private async void HandleRecordingComplete(AudioClip clip)
 
     int keywordBonus = CheckKeywords(transcription.Transcript);
     TrustScore = Mathf.Max(0, TrustScore + result.score + keywordBonus);
+    IsTalking = true;
     CurrentDialogue = FormatDialogue(result.dialogue);
+    //IsTalking = false;
 
     if (TrustScore >= SimpleGeminiMic.WinThreshold)
         RPC_ShowWinResponse(GetWinLine());
@@ -188,9 +195,15 @@ private async void HandleRecordingComplete(AudioClip clip)
     IsMicBusy = false;
 }
     private void OnDialogueChanged()
-{
-    if (dialogueText != null)
-        dialogueText.text = CurrentDialogue.ToString();
+    {
+        if (dialogueText != null) {
+            dialogueText.text = CurrentDialogue.ToString();
+            if (IsDialogueOpen && IsTalking)
+            {
+                speaker.PlayOneShot(talkClip);
+                IsTalking = false;
+            }
+    }
 }
 
 private void OnDialogueOpenChanged()

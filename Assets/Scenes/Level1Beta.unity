@@ -2582,8 +2582,9 @@ MonoBehaviour:
   whisperService: {fileID: 1813482471}
   dialogueText: {fileID: 2008314572}
   trustScoreText: {fileID: 1353090540}
-  houseDoorAnimator: {fileID: 0}
   dialogueCanvas: {fileID: 899473206}
+  talkClip: {fileID: 8300000, guid: d5f00d6d816f3b74995bcea3f70c9422, type: 3}
+  speaker: {fileID: 2077264754}
   _IsMicBusy:
     _value: 0
   _LastSpeakerName:
@@ -2684,6 +2685,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4877512286340165929, guid: 5476804ee4d84bd4db1ba4017369bcdc, type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 2077264754}
+    - target: {fileID: 4877512286340165929, guid: 5476804ee4d84bd4db1ba4017369bcdc, type: 3}
+      propertyPath: winClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0295d70397bcff04da46b1bf86169565, type: 3}
+    - target: {fileID: 4877512286340165929, guid: 5476804ee4d84bd4db1ba4017369bcdc, type: 3}
+      propertyPath: talkClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d5f00d6d816f3b74995bcea3f70c9422, type: 3}
     - target: {fileID: 4877512286340165929, guid: 5476804ee4d84bd4db1ba4017369bcdc, type: 3}
       propertyPath: interaction
       value: 
@@ -10949,6 +10962,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4877512286340165929, guid: 66ecdefc0bb13a14480e1ae93c4d9f1f, type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 2077264754}
+    - target: {fileID: 4877512286340165929, guid: 66ecdefc0bb13a14480e1ae93c4d9f1f, type: 3}
+      propertyPath: winClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0295d70397bcff04da46b1bf86169565, type: 3}
+    - target: {fileID: 4877512286340165929, guid: 66ecdefc0bb13a14480e1ae93c4d9f1f, type: 3}
+      propertyPath: talkClip
+      value: 
+      objectReference: {fileID: 8300000, guid: b0d8065a15e3bb649bfeb7f801d5c0e9, type: 3}
     - target: {fileID: 4877512286340165929, guid: 66ecdefc0bb13a14480e1ae93c4d9f1f, type: 3}
       propertyPath: interaction
       value: 

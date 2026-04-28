@@ -8,6 +8,9 @@ public class ProximityConversationTrigger : MonoBehaviour
     public TownspersonInteraction interaction;
     public float triggerDistance = 1f;
     public float exitDistance = 3f;
+    public AudioClip talkClip;
+    public AudioClip winClip;
+    public AudioSource speaker;
 
     private INPCPersonality _personality;
     private bool hasTriggered = false;
@@ -25,7 +28,10 @@ public class ProximityConversationTrigger : MonoBehaviour
     void Update()
     {
         // Once won, this NPC is done — no more re-triggering
-        if (HasWon) return;
+        if (HasWon)
+        {
+            return;
+        }
 
         // Try to find the local player
         if (player == null)
@@ -74,6 +80,7 @@ public class ProximityConversationTrigger : MonoBehaviour
                     : "\u2026Who's there? What do you want?";
 
                 interaction.CurrentDialogue = interaction.FormatDialogue(openingLine);
+                speaker.PlayOneShot(talkClip);
             }
             else
             {
@@ -100,6 +107,7 @@ public class ProximityConversationTrigger : MonoBehaviour
     {
         HasWon = true;
         Debug.Log($"[Proximity] {_personality?.NPCName ?? gameObject.name} has been convinced!");
+        speaker.PlayOneShot(winClip);
 
         // Check whether every NPC in the scene has now been won
         var allTriggers = FindObjectsOfType<ProximityConversationTrigger>();

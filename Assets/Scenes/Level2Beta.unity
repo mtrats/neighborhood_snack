@@ -1674,6 +1674,18 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4877512286340165929, guid: 68b2a78b85e48004eaeb83fb81d95e5c, type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 437769452}
+    - target: {fileID: 4877512286340165929, guid: 68b2a78b85e48004eaeb83fb81d95e5c, type: 3}
+      propertyPath: winClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0295d70397bcff04da46b1bf86169565, type: 3}
+    - target: {fileID: 4877512286340165929, guid: 68b2a78b85e48004eaeb83fb81d95e5c, type: 3}
+      propertyPath: talkClip
+      value: 
+      objectReference: {fileID: 8300000, guid: bcafe2f146f418b48b319fe01125f3b9, type: 3}
+    - target: {fileID: 4877512286340165929, guid: 68b2a78b85e48004eaeb83fb81d95e5c, type: 3}
       propertyPath: interaction
       value: 
       objectReference: {fileID: 458486291}
@@ -2145,9 +2157,9 @@ AudioSource:
   m_Enabled: 1
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
-  m_audioClip: {fileID: 8300000, guid: 70b34f82141e7f5468f92f9bc597fcbb, type: 3}
+  m_audioClip: {fileID: 8300000, guid: e11bc5df4622d52478c1ce6a8733f05c, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 0.3
+  m_Volume: 0.2
   m_Pitch: 1
   Loop: 1
   Mute: 0
@@ -2285,6 +2297,8 @@ MonoBehaviour:
   dialogueText: {fileID: 894314394}
   trustScoreText: {fileID: 127375905}
   dialogueCanvas: {fileID: 1268727456}
+  talkClip: {fileID: 0}
+  speaker: {fileID: 0}
   _IsMicBusy:
     _value: 0
   _LastSpeakerName:
@@ -4506,6 +4520,18 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 437769452}
+    - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: winClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0295d70397bcff04da46b1bf86169565, type: 3}
+    - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
+      propertyPath: talkClip
+      value: 
+      objectReference: {fileID: 8300000, guid: b0d8065a15e3bb649bfeb7f801d5c0e9, type: 3}
+    - target: {fileID: 4877512286340165929, guid: eaa72bfe080ff504b96cc76fc5d11054, type: 3}
       propertyPath: interaction
       value: 
       objectReference: {fileID: 458486291}
@@ -5831,6 +5857,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4877512286340165929, guid: 1017cd6aca9c3044a81f6ee17ec195f5, type: 3}
+      propertyPath: speaker
+      value: 
+      objectReference: {fileID: 437769452}
+    - target: {fileID: 4877512286340165929, guid: 1017cd6aca9c3044a81f6ee17ec195f5, type: 3}
+      propertyPath: winClip
+      value: 
+      objectReference: {fileID: 8300000, guid: 0295d70397bcff04da46b1bf86169565, type: 3}
+    - target: {fileID: 4877512286340165929, guid: 1017cd6aca9c3044a81f6ee17ec195f5, type: 3}
+      propertyPath: talkClip
+      value: 
+      objectReference: {fileID: 8300000, guid: d5f00d6d816f3b74995bcea3f70c9422, type: 3}
     - target: {fileID: 4877512286340165929, guid: 1017cd6aca9c3044a81f6ee17ec195f5, type: 3}
       propertyPath: interaction
       value: 
